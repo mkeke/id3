@@ -1,14 +1,19 @@
 const fs = require('fs');
+const execSync = require("child_process").execSync;
+
+const log = str => console.log(str);
 
 /*
     ahoi. first things first
 
+    v link fra bin
     - sette tags på en fil (POC)
     - metode som setter tags på fil (filename, tags{})
     - oversikt over gammel kode. spesialting den gjør
     - gather files med whitelist som param
         samler mapper med mp3-filer
     - filter file list. output if file/folder is fishy
+    - push filnavn til liste, ta neste i køen når exec er klar
 */
 /*
     id3.js
@@ -31,8 +36,6 @@ const fs = require('fs');
 
 /*
     apply to all files in given dir
-*/
-const log = $str => console.log($str);
 
 if (process.argv.length < 3) {
     log("no folder specified");
@@ -44,4 +47,107 @@ if (!fs.existsSync(dir)) {
     log("folder does not exist");
     return;
 }
-log(process.argv);
+*/
+
+/*
+    data {
+        artist
+        album
+        year
+        track
+        title
+    }
+*/
+const setMetadata = (filename, data) => {
+    // assumes filename conforms to the naming convention
+    log(data);
+    if(!fs.existsSync(filename)) {
+        log(`file not found: ${filename}`)
+        return;
+    }
+
+    let out = execSync(
+        `id3v2 -l "${filename}"`, {encoding: "utf8"});
+
+    log("ja");
+    log(out);
+
+}
+
+const determineMetadata = filename => {
+    // assumes filename conforms to the naming convention
+    log("determineMetadata()");
+    let data = {};
+    let parts = filename.split("/");
+
+    data.folder = parts[0];
+    data.file = parts[1];
+
+    return data;
+}
+
+
+/*
+    gatherFiles (path, options)
+    gathers all files recursively from path
+    returns list of files relative to path
+    only gathers files, not directories
+    options can be whitelist, to gather certain filenames
+    for instance mp3/MP3 files:
+        { whitelist: /\.mp3$/i }
+*/
+const gatherFiles = (path, options = {}) => {
+    let files = [];
+
+    let dirs = [path];
+
+    while (dirs.length > 0) {
+        let d = dirs.shift();
+        // get elements in dir
+        let elements = fs.readdirSync(d);
+        for(let i in elements) {
+            let e = elements[i];            
+            let s = fs.statSync(d + "/" + e);
+            if (s.isDirectory()) {
+                dirs.push(d + "/" + e);
+            } else {
+                // check whitelist
+                if(options.whitelist !== undefined) {
+                    if(options.whitelist.test(d + "/" + e)) {
+                        files.push(d + "/" + e);
+                    }
+                } else {
+                    files.push(d + "/" + e);
+                }
+            }
+        }
+    }
+    return files;
+}
+
+let path = process.argv[2];
+if (path === undefined || path == "") {
+    // default to current dir
+    path = ".";
+}
+// remove trailing slashes
+path = path.replace(/\/+$/, "");
+
+// quit if path does not exist
+if(!fs.existsSync(path)) {
+    log(`not found: ${path}`);
+    log("quitting.");
+    return;
+}
+
+// quit if not a directory
+let stats = fs.statSync(path);
+if (!stats.isDirectory()) {
+    log(`not a directory: ${path}`);
+    log("quitting.");
+    return;
+}
+
+let files = gatherFiles(path, { whitelist: /\.mp3$/i });
+
+log(files);
