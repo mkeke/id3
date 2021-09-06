@@ -1,0 +1,3 @@
+#!/bin/bash
+
+node ~/dev/simen/id3/id3.js "$@"

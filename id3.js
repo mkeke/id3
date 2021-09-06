@@ -1,8 +1,81 @@
 const fs = require('fs');
 const execSync = require("child_process").execSync;
 
-const log = str => console.log(str);
+const log = console.log;
+const printErr = (str) => { 
+    log(str);
+    log("usage:\n   z.id3 <path>"); 
+    process.exit();
+}
 
+/*
+    Check command line params
+    - must have one argument
+    - path must exist
+    - must be a path to a valid folder
+*/
+
+if (process.argv.length < 3) {
+    printErr("<path> is missing.");
+}
+
+const path = process.argv[2].replace(/\/*$/, "");
+if(!fs.existsSync(path)) {
+    printErr("Path does not exist.");
+}
+
+const stats = fs.statSync(path);
+if(!stats.isDirectory()) {
+    printErr("Path must be to a valid folder.");
+}
+
+/*
+    check folder name for convention. report fishiness
+
+    artist - title (2020)
+
+    everyttrhing from the start to the fiorst - is the artist
+    everything between the first - and the last (1234) is the title
+    the last (1234) is the year
+*/
+
+// get only the last folder name. prepending a / for easier regex
+const folder = ("/" + path).replace(/^.*\/([^\/]*)$/, "$1");
+const matches = /^([^-]*)-(.*)\((\d\d\d\d)\)$/gm.exec(folder);
+if(!matches) {
+    printErr("Something fishy with folder name: " + folder);
+}
+
+// grab + trim album parts
+const album = {
+    artist: matches[1].trim(),
+    title: matches[2].trim(),
+    year: matches[3],
+}
+
+log(album);
+
+/*
+    check files in folder. report fishiness
+*/
+
+/*
+    still here, then remove + apply tag for each file
+*/
+
+log("hei du");
+
+return;
+
+/*
+    ahoi 2. firster things firster
+    - kopiere inn noen albums
+    - sjekk params (path)
+    - apply på folder
+    - sjekk filnavn
+    - print out fishiness
+    - apply tags til hver fil i folder
+*/
 /*
     ahoi. first things first
 
@@ -125,29 +198,8 @@ const gatherFiles = (path, options = {}) => {
     return files;
 }
 
-let path = process.argv[2];
-if (path === undefined || path == "") {
-    // default to current dir
-    path = ".";
-}
-// remove trailing slashes
-path = path.replace(/\/+$/, "");
 
-// quit if path does not exist
-if(!fs.existsSync(path)) {
-    log(`not found: ${path}`);
-    log("quitting.");
-    return;
-}
 
-// quit if not a directory
-let stats = fs.statSync(path);
-if (!stats.isDirectory()) {
-    log(`not a directory: ${path}`);
-    log("quitting.");
-    return;
-}
-
-let files = gatherFiles(path, { whitelist: /\.mp3$/i });
+// let files = gatherFiles(path, { whitelist: /\.mp3$/i });
 
 log(files);
