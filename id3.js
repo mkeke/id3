@@ -1,10 +1,22 @@
 const fs = require('fs');
 const execSync = require("child_process").execSync;
+const gatherFiles = require("./src/gatherFiles");
+const cmdExists = require("./src/cmdExists");
 
 const log = console.log;
-const printErr = (str) => { 
+const printErr = (str, exit = true) => { 
     log(str);
-    log("usage:\n   z.id3 <path>"); 
+    log("usage:\n   z.id3 <path>");
+
+    exit && process.exit();
+}
+
+/*
+    check if required commands are available
+*/
+
+if (!cmdExists("id3v2")) {
+    log("Required command id3v2 must be installed first.")
     process.exit();
 }
 
@@ -32,14 +44,14 @@ if(!stats.isDirectory()) {
 /*
     check folder name for convention. report fishiness
 
-    artist - title (2020)
+    the artist - the title (2020)
 
-    everyttrhing from the start to the fiorst - is the artist
-    everything between the first - and the last (1234) is the title
-    the last (1234) is the year
+    Artist is from start of string to the first "-"
+    Album title is from the first "-" to the last "(1234)"
+    Year is the last "(1234)"
 */
 
-// get only the last folder name. prepending a / for easier regex
+// get only the last folder name. prepend a / for easier regex
 const folder = ("/" + path).replace(/^.*\/([^\/]*)$/, "$1");
 const matches = /^([^-]*)-(.*)\((\d\d\d\d)\)$/gm.exec(folder);
 if(!matches) {
@@ -53,11 +65,41 @@ const album = {
     year: matches[3],
 }
 
-log(album);
+/*
+    get file list
+*/
+let files = gatherFiles(path, false, /.mp3$/i);
 
 /*
-    check files in folder. report fishiness
+    check filenames. get data. report fishiness
 */
+let ok = true;
+files = files.map( item => {
+    let matches = /^(\d\d) - (.*)\.mp3$/i.exec(item);
+    if (matches) {
+        return { filename: item, num: matches[1], title: matches[2] };
+    } else {
+        if (ok) {
+            log("The following filenames are fishy:");
+            ok = false;
+        }
+        log("  " + path + "/" + item);
+        return item;
+    }
+});
+
+if (!ok) {
+    log("Fix errors and retry.");
+    process.exit();
+}
+
+/*
+    if no fishiness, apply tags
+*/
+
+files.map( track => {
+    log(album.artist + " -> " + album.title + " -> " + album.year + " -> " + track.num + " -> " + track.title);
+});
 
 /*
     still here, then remove + apply tag for each file
@@ -157,45 +199,6 @@ const determineMetadata = filename => {
     data.file = parts[1];
 
     return data;
-}
-
-
-/*
-    gatherFiles (path, options)
-    gathers all files recursively from path
-    returns list of files relative to path
-    only gathers files, not directories
-    options can be whitelist, to gather certain filenames
-    for instance mp3/MP3 files:
-        { whitelist: /\.mp3$/i }
-*/
-const gatherFiles = (path, options = {}) => {
-    let files = [];
-
-    let dirs = [path];
-
-    while (dirs.length > 0) {
-        let d = dirs.shift();
-        // get elements in dir
-        let elements = fs.readdirSync(d);
-        for(let i in elements) {
-            let e = elements[i];            
-            let s = fs.statSync(d + "/" + e);
-            if (s.isDirectory()) {
-                dirs.push(d + "/" + e);
-            } else {
-                // check whitelist
-                if(options.whitelist !== undefined) {
-                    if(options.whitelist.test(d + "/" + e)) {
-                        files.push(d + "/" + e);
-                    }
-                } else {
-                    files.push(d + "/" + e);
-                }
-            }
-        }
-    }
-    return files;
 }
 
 
