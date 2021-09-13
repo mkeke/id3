@@ -10,14 +10,6 @@
 
     - removes id3v1 tags and applies id3v2 tags
 
-    Changelog
-    2005-05-01: first version in Perl
-    2006-06-12:
-    2007-06-02: modified to only use the id3v2 command
-    2015-11-10: converted to php with dependency get-id3
-    (sleep)
-    2021-08-01: rewrite to nodejs
-    
     Simen Lysebo, September 2021
 */
 
@@ -150,7 +142,7 @@ log("done");
 
 /*
 
-// prove it
+// proof
 
 files.map( track => {
     log(path + "/" + track.origin);
