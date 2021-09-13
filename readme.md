@@ -21,6 +21,8 @@ I prefix my scripts with "z." for convenience. Rename if you want to.
 
 ## Requirements
 
+Nodejs (~14.17.6) must be installed.  
+
 Command `id3v2` must be available for execSync.
 
 The `folder` must follow a strong naming convention, or else it will complain and refuse to do anything until you have tidied up. What's the point of having a messy mp3 archive anyway? The script also assumes that you are a nice person who supports your favourite bands and buys their music.
