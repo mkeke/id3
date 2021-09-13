@@ -1,3 +1,26 @@
+/*
+    id3.js <path>
+    set id3 tags on mp3 files in specified path
+
+    - checks file naming convention
+        artist - title (YYYY)/01 - foobar.mp3
+        " and $ is allowed in filename, and is escaped prior to execSync
+
+    - prints out wrong formats, and exits
+
+    - removes id3v1 tags and applies id3v2 tags
+
+    Changelog
+    2005-05-01: first version in Perl
+    2006-06-12:
+    2007-06-02: modified to only use the id3v2 command
+    2015-11-10: converted to php with dependency get-id3
+    (sleep)
+    2021-08-01: rewrite to nodejs
+    
+    Simen Lysebo, September 2021
+*/
+
 const fs = require('fs');
 const execSync = require("child_process").execSync;
 const gatherFiles = require("./src/gatherFiles");
@@ -9,6 +32,13 @@ const printErr = (str, exit = true) => {
     log("usage:\n   z.id3 <path>");
 
     exit && process.exit();
+}
+const prepString = s => {
+    // backslash "
+    s = s.replace(/\"/g, "\\\"");
+    // backslash $
+    s = s.replace(/\$/g, "\\\$");
+    return s;
 }
 
 /*
@@ -58,11 +88,12 @@ if(!matches) {
     printErr("Something fishy with folder name: " + folder);
 }
 
-// grab + trim album parts
+// grab + trim album parts. Strings must be prepared for exec
 const album = {
-    artist: matches[1].trim(),
-    title: matches[2].trim(),
-    year: matches[3],
+    path: prepString(path),
+    artist: prepString(matches[1].trim()),
+    title: prepString(matches[2].trim()),
+    year: prepString(matches[3]),
 }
 
 /*
@@ -71,13 +102,17 @@ const album = {
 let files = gatherFiles(path, false, /.mp3$/i);
 
 /*
-    check filenames. get data. report fishiness
+    check filenames. get data (prepared for exec). report fishiness
 */
 let ok = true;
 files = files.map( item => {
     let matches = /^(\d\d) - (.*)\.mp3$/i.exec(item);
     if (matches) {
-        return { filename: item, num: matches[1], title: matches[2] };
+        return { 
+            origin: item,
+            filename: prepString(item), 
+            num: prepString(matches[1]), 
+            title: prepString(matches[2]) };
     } else {
         if (ok) {
             log("The following filenames are fishy:");
@@ -96,113 +131,32 @@ if (!ok) {
 /*
     if no fishiness, apply tags
 */
+log(path);
 
 files.map( track => {
-    log(album.artist + " -> " + album.title + " -> " + album.year + " -> " + track.num + " -> " + track.title);
+    log(`   ${track.origin}`);
+    // remove all id3v1 tags
+    let cmd = `id3v2 -s "${album.path}/${track.filename}"`;
+    execSync(cmd, {encoding: "utf8"});
+
+    // write id3v2 tags
+    cmd = `id3v2 -a "${album.artist}" -A "${album.title}" -y "${album.year}"`;
+    cmd += ` -T "${track.num}" -t "${track.title}" "${album.path}/${track.filename}"`;
+
+    execSync(cmd), {encoding: "utf8"};
 });
 
-/*
-    still here, then remove + apply tag for each file
-*/
-
-log("hei du");
-
-return;
+log("done");
 
 /*
-    ahoi 2. firster things firster
-    - kopiere inn noen albums
-    - sjekk params (path)
-    - apply på folder
-    - sjekk filnavn
-    - print out fishiness
-    - apply tags til hver fil i folder
-*/
-/*
-    ahoi. first things first
 
-    v link fra bin
-    - sette tags på en fil (POC)
-    - metode som setter tags på fil (filename, tags{})
-    - oversikt over gammel kode. spesialting den gjør
-    - gather files med whitelist som param
-        samler mapper med mp3-filer
-    - filter file list. output if file/folder is fishy
-    - push filnavn til liste, ta neste i køen når exec er klar
-*/
-/*
-    id3.js
-    set id3 tags on mp3 files
+// prove it
 
-    1 gather files from current dir
-    2 check folder name + file name
-        artist - title (YYYY) / 01 - foobar.mp3
-    3 print out wrong formats + exit
-    4 apply id3 tags
-
-    Changelog
-    # May 1 2005 Simen Lysebo (simen@slaatten.net)
-    # June 12 2006 Simen Lysebo (simen@slaatten.net)
-    # June 2 2007 Simen Lysebo (simen@slaatten.net)
-    #      modified to only use the id3v2 command
-    July 2021 - rewrite from perl to nodejs
-
-*/
-
-/*
-    apply to all files in given dir
-
-if (process.argv.length < 3) {
-    log("no folder specified");
-    return;
-}
-
-let dir = process.argv[2];
-if (!fs.existsSync(dir)) {
-    log("folder does not exist");
-    return;
-}
-*/
-
-/*
-    data {
-        artist
-        album
-        year
-        track
-        title
-    }
-*/
-const setMetadata = (filename, data) => {
-    // assumes filename conforms to the naming convention
-    log(data);
-    if(!fs.existsSync(filename)) {
-        log(`file not found: ${filename}`)
-        return;
-    }
-
-    let out = execSync(
-        `id3v2 -l "${filename}"`, {encoding: "utf8"});
-
-    log("ja");
+files.map( track => {
+    log(path + "/" + track.origin);
+    let cmd = `id3v2 -l "${album.path}/${track.filename}"`;
+    let out = execSync(cmd, {encoding: "utf8"});
     log(out);
+});
 
-}
-
-const determineMetadata = filename => {
-    // assumes filename conforms to the naming convention
-    log("determineMetadata()");
-    let data = {};
-    let parts = filename.split("/");
-
-    data.folder = parts[0];
-    data.file = parts[1];
-
-    return data;
-}
-
-
-
-// let files = gatherFiles(path, { whitelist: /\.mp3$/i });
-
-log(files);
+*/
