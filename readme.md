@@ -33,7 +33,7 @@ Examples of excellent music with proper folder and file names:
 
 ## The story so far
 
-2005-2007: first version coded in Perl. The script was a trusty old friend for many meny years.
+2005-2007: first version coded in Perl. The script was a trusty old friend for many many years.
 
 2015: converted to PHP with dependency get-id3
 
