@@ -6,9 +6,12 @@ Script made in nodejs, and made solely for my Ubuntu Linux machine.
 
 ## Install
 
-    Edit `bin/z.id3` to suit your preferred location
-    Copy `bin/z.id3` to ~/bin
-    $ chmod +x z.id3
+Edit `bin/z.id3` to suit your preferred location  
+
+Copy `bin/z.id3` to ~/bin  
+
+
+`$ chmod +x z.id3`  
 
 I prefix my scripts with "z." for convenience. Rename if you want to.
 
