@@ -2,9 +2,7 @@
 
 id3 tagging of mp3 files
 
-Script made in nodejs, and made solely for my Ubuntu Linux machine.
-
-## Install
+## Installing
 
 Edit `bin/z.id3` to suit your preferred location  
 
@@ -18,6 +16,11 @@ I prefix my scripts with "z." for convenience. Rename if you want to.
 ## Usage
 
     $ z.id3 path/to/folder
+
+Sub folders directly under specified path are affected. mp3 files in these folders will be updated only if all folders and mp3 file names follow the naming standard.
+
+If the naming format is wrong, the script will exit without doing anything.
+ID3 tagging only occurs when all the folders and files match the naming standard.
 
 ## Requirements
 
